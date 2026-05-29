@@ -1,0 +1,89 @@
+# .github/workflows/ci.yaml
+name: CI — Build and Push Docker Images
+
+on:
+  push:
+    branches: [ nicky ]
+  pull_request:
+    branches: [ nicky ]
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+jobs:
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    
+    # Build matrix — runs one job per service in parallel
+    strategy:
+      matrix:
+        service:
+          - frontend
+          - cartservice
+          - productcatalogservice
+          - currencyservice
+          - paymentservice
+          - shippingservice
+          - emailservice
+          - checkoutservice
+          - recommendationservice
+          - adservice
+          - loadgenerator
+
+    steps:
+      # Step 1: Download your code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Log in to AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 3: Log Docker into ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Step 4: Build and push the Docker image
+      - name: Build, tag, and push image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}  # Use git commit hash as image tag
+        run: |
+          IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
+          
+          echo "Building image: $IMAGE_URI"
+          docker build -t "$IMAGE_URI" ./src/${{ matrix.service }}/
+          
+          echo "Pushing image: $IMAGE_URI"
+          docker push "$IMAGE_URI"
+          
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+      # Step 5: Update the Helm values file with the new image tag
+      - name: Update image tag in Helm values
+        if: github.ref == 'refs/heads/main'  # Only on main branch
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Install yq (YAML processor)
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          
+          # Update the image tag for this service in values.yaml
+          yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" \
+            helm-chart/values.yaml
+          
+          # Commit and push the updated values back to Git
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add helm-chart/values.yaml
+          git diff --staged --quiet || \
+            git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
+          git push
