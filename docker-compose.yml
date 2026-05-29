@@ -1,0 +1,119 @@
+services:
+  redis-cart:
+    image: redis:alpine
+    ports: ["6379"]
+
+  adservice:
+    image: gcr.io/google-samples/microservices-demo/adservice:v0.10.1
+    ports: ["9555"]
+    environment:
+      - PORT=9555
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+
+  cartservice:
+    image: gcr.io/google-samples/microservices-demo/cartservice:v0.10.1
+    ports: ["7070"]
+    environment:
+      - REDIS_ADDR=redis-cart:6379
+    depends_on: [redis-cart]
+
+  checkoutservice:
+    image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.10.1
+    ports: ["5050"]
+    environment:
+      - PORT=5050
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - PAYMENT_SERVICE_ADDR=paymentservice:50051
+      - EMAIL_SERVICE_ADDR=emailservice:8080
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  currencyservice:
+    image: gcr.io/google-samples/microservices-demo/currencyservice:v0.10.1
+    ports: ["7000"]
+    environment:
+      - PORT=7000
+      - DISABLE_DEBUGGER=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  emailservice:
+    image: gcr.io/google-samples/microservices-demo/emailservice:v0.10.1
+    ports: ["8080"]
+    environment:
+      - PORT=8080
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  shoppingassistantservice:
+    image: gcr.io/google-samples/microservices-demo/shoppingassistantservice:v0.10.1
+    ports: ["8080"]
+    environment:
+      - PORT=8080
+      - DISABLE_TRACING=1
+
+  frontend:
+    image: gcr.io/google-samples/microservices-demo/frontend:v0.10.1
+    ports: ["8080:8080"]
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+      - RECOMMENDATION_SERVICE_ADDR=recommendationservice:8080
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - CHECKOUT_SERVICE_ADDR=checkoutservice:5050
+      - AD_SERVICE_ADDR=adservice:9555
+      - SHOPPING_ASSISTANT_SERVICE_ADDR=shoppingassistantservice:8080
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+      - DISABLE_STATS=1
+    depends_on:
+      - cartservice
+      - checkoutservice
+      - currencyservice
+      - productcatalogservice
+      - recommendationservice
+      - shoppingassistantservice
+
+  paymentservice:
+    image: gcr.io/google-samples/microservices-demo/paymentservice:v0.10.1
+    ports: ["50051"]
+    environment:
+      - PORT=50051
+      - DISABLE_DEBUGGER=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  productcatalogservice:
+    image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.10.1
+    ports: ["3550"]
+    environment:
+      - PORT=3550
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  recommendationservice:
+    image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.10.1
+    ports: ["8080"]
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - DISABLE_DEBUGGER=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+
+  shippingservice:
+    image: gcr.io/google-samples/microservices-demo/shippingservice:v0.10.1
+    ports: ["50051"]
+    environment:
+      - PORT=50051
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
