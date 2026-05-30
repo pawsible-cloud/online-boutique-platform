@@ -23,50 +23,62 @@ jobs:
           - service: adservice
             path: src/adservice
             dockerfile: src/adservice/Dockerfile
+            context: src/adservice
 
           - service: cartservice
             path: src/cartservice
             dockerfile: src/cartservice/src/Dockerfile   # nested one level deeper
+            context: src/cartservice/src                 # source files also live here
 
           - service: checkoutservice
             path: src/checkoutservice
             dockerfile: src/checkoutservice/Dockerfile
+            context: src/checkoutservice
 
           - service: currencyservice
             path: src/currencyservice
             dockerfile: src/currencyservice/Dockerfile
+            context: src/currencyservice
 
           - service: emailservice
             path: src/emailservice
             dockerfile: src/emailservice/Dockerfile
+            context: src/emailservice
 
           - service: frontend
             path: src/frontend
             dockerfile: src/frontend/Dockerfile
+            context: src/frontend
 
           - service: loadgenerator
             path: src/loadgenerator
             dockerfile: src/loadgenerator/Dockerfile
+            context: src/loadgenerator
 
           - service: paymentservice
             path: src/paymentservice
             dockerfile: src/paymentservice/Dockerfile
+            context: src/paymentservice
 
           - service: productcatalogservice
             path: src/productcatalogservice
             dockerfile: src/productcatalogservice/Dockerfile
+            context: src/productcatalogservice
 
           - service: recommendationservice
             path: src/recommendationservice
             dockerfile: src/recommendationservice/Dockerfile
+            context: src/recommendationservice
 
           - service: shippingservice
             path: src/shippingservice
             dockerfile: src/shippingservice/Dockerfile
+            context: src/shippingservice
 
           - service: shoppingassistantservice
             path: src/shoppingassistantservice
             dockerfile: src/shoppingassistantservice/Dockerfile
+            context: src/shoppingassistantservice
 
     steps:
       # ── 1. Checkout code ──────────────────────────────────────────────────
@@ -146,7 +158,7 @@ jobs:
             --cache-from type=local,src=/tmp/.buildx-cache-${{ matrix.service }} \
             --cache-to   type=local,dest=/tmp/.buildx-cache-${{ matrix.service }}-new,mode=max \
             --push \
-            ./src/${{ matrix.service }}/
+            ./${{ matrix.context }}/
 
           echo "✅ Successfully pushed: $IMAGE_URI"
 
@@ -185,3 +197,4 @@ jobs:
           git diff --staged --quiet || \
             git commit -m "ci: update ${{ matrix.service }} image tag to ${IMAGE_TAG::8}"
           git push
+
