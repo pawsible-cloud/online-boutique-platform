@@ -1,11 +1,10 @@
-# .github/workflows/ci.yaml
 name: CI — Build and Push Docker Images
 
 on:
   push:
-    branches: [ nicky ]
+    branches: [ main ]
   pull_request:
-    branches: [ nicky ]
+    branches: [ main ]
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -15,75 +14,174 @@ jobs:
   build-and-push:
     name: Build ${{ matrix.service }}
     runs-on: ubuntu-latest
-    
-    # Build matrix — runs one job per service in parallel
+    timeout-minutes: 30
+
     strategy:
+      fail-fast: false   # if one service fails, keep building the others
       matrix:
-        service:
-          - frontend
-          - cartservice
-          - productcatalogservice
-          - currencyservice
-          - paymentservice
-          - shippingservice
-          - emailservice
-          - checkoutservice
-          - recommendationservice
-          - adservice
-          - loadgenerator
+        include:
+          - service: adservice
+            path: src/adservice
+            dockerfile: src/adservice/Dockerfile
+
+          - service: cartservice
+            path: src/cartservice
+            dockerfile: src/cartservice/src/Dockerfile   # nested one level deeper
+
+          - service: checkoutservice
+            path: src/checkoutservice
+            dockerfile: src/checkoutservice/Dockerfile
+
+          - service: currencyservice
+            path: src/currencyservice
+            dockerfile: src/currencyservice/Dockerfile
+
+          - service: emailservice
+            path: src/emailservice
+            dockerfile: src/emailservice/Dockerfile
+
+          - service: frontend
+            path: src/frontend
+            dockerfile: src/frontend/Dockerfile
+
+          - service: loadgenerator
+            path: src/loadgenerator
+            dockerfile: src/loadgenerator/Dockerfile
+
+          - service: paymentservice
+            path: src/paymentservice
+            dockerfile: src/paymentservice/Dockerfile
+
+          - service: productcatalogservice
+            path: src/productcatalogservice
+            dockerfile: src/productcatalogservice/Dockerfile
+
+          - service: recommendationservice
+            path: src/recommendationservice
+            dockerfile: src/recommendationservice/Dockerfile
+
+          - service: shippingservice
+            path: src/shippingservice
+            dockerfile: src/shippingservice/Dockerfile
+
+          - service: shoppingassistantservice
+            path: src/shoppingassistantservice
+            dockerfile: src/shoppingassistantservice/Dockerfile
 
     steps:
-      # Step 1: Download your code
+      # ── 1. Checkout code ──────────────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Log in to AWS
+      # ── 2. Detect if this service's source actually changed ───────────────
+      #       Skips the build entirely if nothing in the service folder changed.
+      #       On the very first push every service will build (no previous commit).
+      - name: Check for changes in ${{ matrix.service }}
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.path }}/**'
+              - '.github/workflows/ci.yaml'
+
+      # ── 3. Set up Docker Buildx (faster, supports layer caching) ──────────
+      - name: Set up Docker Buildx
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
+        uses: docker/setup-buildx-action@v3
+
+      # ── 4. Cache Docker layers (speeds up repeat builds significantly) ─────
+      - name: Cache Docker layers
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache-${{ matrix.service }}
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.service }}-
+
+      # ── 5. Cache Gradle (only relevant for adservice — Java/Gradle build) ──
+      - name: Cache Gradle packages
+        if: matrix.service == 'adservice'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('src/adservice/**/*.gradle*', 'src/adservice/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ── 6. Configure AWS credentials ──────────────────────────────────────
       - name: Configure AWS credentials
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Step 3: Log Docker into ECR
+      # ── 7. Log in to Amazon ECR ───────────────────────────────────────────
       - name: Login to Amazon ECR
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Step 4: Build and push the Docker image
+      # ── 8. Build and push image ───────────────────────────────────────────
       - name: Build, tag, and push image to ECR
-        env:
-          IMAGE_TAG: ${{ github.sha }}  # Use git commit hash as image tag
-        run: |
-          IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
-          
-          echo "Building image: $IMAGE_URI"
-          docker build -t "$IMAGE_URI" ./src/${{ matrix.service }}/
-          
-          echo "Pushing image: $IMAGE_URI"
-          docker push "$IMAGE_URI"
-          
-          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
-
-      # Step 5: Update the Helm values file with the new image tag
-      - name: Update image tag in Helm values
-        if: github.ref == 'refs/heads/main'  # Only on main branch
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Install yq (YAML processor)
+          IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
+          LATEST_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:latest"
+
+          echo "Building image: $IMAGE_URI"
+          echo "Dockerfile: ${{ matrix.dockerfile }}"
+
+          docker buildx build \
+            --file ${{ matrix.dockerfile }} \
+            --tag "$IMAGE_URI" \
+            --tag "$LATEST_URI" \
+            --cache-from type=local,src=/tmp/.buildx-cache-${{ matrix.service }} \
+            --cache-to   type=local,dest=/tmp/.buildx-cache-${{ matrix.service }}-new,mode=max \
+            --push \
+            ./src/${{ matrix.service }}/
+
+          echo "✅ Successfully pushed: $IMAGE_URI"
+
+      # ── 9. Rotate cache (prevents unbounded cache growth) ─────────────────
+      - name: Rotate build cache
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'push'
+        run: |
+          rm -rf /tmp/.buildx-cache-${{ matrix.service }}
+          mv /tmp/.buildx-cache-${{ matrix.service }}-new \
+             /tmp/.buildx-cache-${{ matrix.service }} 2>/dev/null || true
+
+      # ── 10. Update image tag in Helm values.yaml ──────────────────────────
+      #        Only runs on pushes to main (not on pull requests)
+      - name: Update image tag in Helm values.yaml
+        if: |
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'push' &&
+          (steps.changes.outputs.changed == 'true')
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Install yq — lightweight YAML processor
           sudo wget -qO /usr/local/bin/yq \
             https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          
-          # Update the image tag for this service in values.yaml
+
+          # Update the image tag for this specific service in values.yaml
           yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" \
             helm-chart/values.yaml
-          
-          # Commit and push the updated values back to Git
-          git config user.name "GitHub Actions Bot"
+
+          # Commit the updated values.yaml back to Git
+          # ArgoCD watches this file and will deploy the new image automatically
+          git config user.name  "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add helm-chart/values.yaml
           git diff --staged --quiet || \
-            git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
+            git commit -m "ci: update ${{ matrix.service }} image tag to ${IMAGE_TAG::8}"
           git push
