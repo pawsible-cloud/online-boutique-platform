@@ -1,11 +1,10 @@
-#
 name: CI — Build and Push Docker Images
 
 on:
   push:
-    branches: [ main ]
+    branches: [ nicky ]
   pull_request:
-    branches: [ main ]
+    branches: [ nicky ]
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
