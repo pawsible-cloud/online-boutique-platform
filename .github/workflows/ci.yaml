@@ -1,0 +1,66 @@
+name: CI — Build and Push Docker Images
+on:
+  push:
+    branches: [ main, vivian ]
+  pull_request:
+    branches: [ main ]
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+jobs:
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - frontend
+          - cartservice
+          - productcatalogservice
+          - currencyservice
+          - paymentservice
+          - shippingservice
+          - emailservice
+          - checkoutservice
+          - recommendationservice
+          - adservice
+          - loadgenerator
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
+          echo "Building image: $IMAGE_URI"
+          docker build -t "$IMAGE_URI" ./src/${{ matrix.service }}/
+          echo "Pushing image: $IMAGE_URI"
+          docker push "$IMAGE_URI"
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+      - name: Update image tag in Helm values
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/vivian'
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" helm-chart/values.yaml
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add helm-chart/values.yaml
+          git diff --staged --quiet || git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
+          git push
