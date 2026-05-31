@@ -1,12 +1,15 @@
 name: CI — Build and Push Docker Images
+
 on:
   push:
     branches: [ main, vivian ]
   pull_request:
     branches: [ main ]
+
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
 jobs:
   build-and-push:
     name: Build ${{ matrix.service }}
@@ -26,6 +29,7 @@ jobs:
           - recommendationservice
           - adservice
           - loadgenerator
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,9 +49,17 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          if [ "${{ matrix.service }}" = "cartservice" ]; then
+            DOCKERFILE="./src/cartservice/Dockerfile"
+            BUILD_CONTEXT="./src/cartservice/src"
+          else
+            DOCKERFILE="./src/${{ matrix.service }}/Dockerfile"
+            BUILD_CONTEXT="./src/${{ matrix.service }}"
+          fi
+
           IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
           echo "Building image: $IMAGE_URI"
-          docker build -t "$IMAGE_URI" ./src/${{ matrix.service }}/
+          docker build -f "$DOCKERFILE" -t "$IMAGE_URI" "$BUILD_CONTEXT"
           echo "Pushing image: $IMAGE_URI"
           docker push "$IMAGE_URI"
           echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
@@ -57,11 +69,13 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" helm-chart/values.yaml
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add helm-chart/values.yaml
-          git diff --staged --quiet || git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
+          git diff --staged --quiet || \
+            git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
           git push

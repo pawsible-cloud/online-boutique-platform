@@ -1,11 +1,7 @@
-# my-values.yaml
 frontend:
-  replicas: 2        # Run 2 copies of the frontend for high availability
-  
+  replicas: 2
 cartService:
   replicas: 1
-
-# Image configuration (we'll update this in CI)
 images:
   tag: "latest"
-  repository: "207706557775.dkr.ecr.us-east-1.amazonaws.com/online-boutique"
+  repository: "gcr.io/google-samples/microservices-demo"
