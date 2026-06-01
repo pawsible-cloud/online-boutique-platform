@@ -1,0 +1,19 @@
+# monitoring/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: online-boutique
+  namespace: monitoring
+  labels:
+    release: prometheus   # Must match the Prometheus Helm release name
+spec:
+  namespaceSelector:
+    matchNames:
+      - online-boutique
+  selector:
+    matchLabels:
+      app: frontend        # Match your frontend service label
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s        # Scrape every 15 seconds
