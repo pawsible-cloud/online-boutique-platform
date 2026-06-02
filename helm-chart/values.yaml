@@ -124,6 +124,8 @@ frontend:
     limits:
       cpu: 200m
       memory: 128Mi
+  image:
+    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
 loadGenerator:
   create: true
   name: loadgenerator
