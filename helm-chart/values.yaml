@@ -220,3 +220,6 @@ productcatalogservice:
 adservice:
   image:
     tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+loadgenerator:
+  image:
+    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
