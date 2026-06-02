@@ -1,15 +1,12 @@
 name: CI — Build and Push Docker Images
-
 on:
   push:
     branches: [ main, vivian ]
   pull_request:
     branches: [ main ]
-
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
 jobs:
   build-and-push:
     name: Build ${{ matrix.service }}
@@ -29,10 +26,12 @@ jobs:
           - recommendationservice
           - adservice
           - loadgenerator
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -56,7 +55,6 @@ jobs:
             DOCKERFILE="./src/${{ matrix.service }}/Dockerfile"
             BUILD_CONTEXT="./src/${{ matrix.service }}"
           fi
-
           IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service }}:${IMAGE_TAG}"
           echo "Building image: $IMAGE_URI"
           docker build -f "$DOCKERFILE" -t "$IMAGE_URI" "$BUILD_CONTEXT"
@@ -72,10 +70,26 @@ jobs:
           sudo wget -qO /usr/local/bin/yq \
             https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" helm-chart/values.yaml
+
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add helm-chart/values.yaml
-          git diff --staged --quiet || \
+
+          for i in 1 2 3 4 5; do
+            git fetch origin
+            git rebase origin/${{ github.ref_name }}
+
+            yq -i ".${{ matrix.service }}.image.tag = \"${IMAGE_TAG}\"" helm-chart/values.yaml
+
+            git add helm-chart/values.yaml
+            git diff --staged --quiet && echo "No changes to commit" && exit 0
+
             git commit -m "ci: update ${{ matrix.service }} image to ${IMAGE_TAG}"
-          git push
+
+            git push && echo "Push succeeded" && exit 0
+
+            echo "Push failed, attempt $i of 5. Retrying..."
+            sleep $((RANDOM % 10 + 5))
+          done
+
+          echo "All push attempts failed"
+          exit 1
