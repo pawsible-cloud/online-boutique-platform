@@ -209,3 +209,6 @@ emailservice:
 checkoutservice:
   image:
     tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+shippingservice:
+  image:
+    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
