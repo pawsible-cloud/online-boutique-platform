@@ -1,0 +1,38 @@
+# argocd/application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: online-boutique
+  namespace: argocd          # ArgoCD lives here
+  
+  # Auto-delete child resources when this Application is deleted
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: default
+
+  # Where to get the deployment config from (your Git repo)
+  source:
+    repoURL: https://github.com/pawsible-cloud/online-boutique-platform.git
+    targetRevision: main      # Watch the main branch
+    path: helm-chart          # The Helm chart is in this folder
+    
+    helm:
+      releaseName: online-boutique
+      valueFiles:
+        - values.yaml
+
+  # Where to deploy to (your EKS cluster)
+  destination:
+    server: https://kubernetes.default.svc   # The cluster ArgoCD runs in
+    namespace: online-boutique
+
+  # Sync policy — automated means ArgoCD deploys without manual approval
+  syncPolicy:
+    automated:
+      prune: true       # Delete resources removed from Git
+      selfHeal: true    # Fix manual changes (drift correction)
+    syncOptions:
+      - CreateNamespace=true    # Create namespace if it doesn't exist
+      - PrunePropagationPolicy=foreground
