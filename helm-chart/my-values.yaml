@@ -3,7 +3,7 @@ frontend:
   replicas: 2        # Run 2 copies of the frontend for high availability
   
 cartService:
-  replicas: 1
+  replicas: 2
 
 # Image configuration (we'll update this in CI)
 images:

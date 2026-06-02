@@ -15,13 +15,13 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes version for EKS"
   type        = string
-  default     = "1.29"
+  default     = "1.30"
 }
 
 variable "node_instance_type" {
   description = "EC2 instance type for worker nodes (t3.medium is minimum for this app)"
   type        = string
-  default     = "t3.small"   # NOT free tier, but cheapest that works
+  default     = "t3.large"   # NOT free tier, but cheapest that works
 }
 
 variable "node_min_count" {
@@ -36,5 +36,5 @@ variable "node_max_count" {
 
 variable "node_desired_count" {
   type    = number
-  default = 2
+  default = 3
 }
