@@ -125,7 +125,7 @@ frontend:
       cpu: 200m
       memory: 128Mi
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 loadGenerator:
   create: true
   name: loadgenerator
@@ -201,25 +201,31 @@ shoppingAssistantService:
   name: shoppingassistantservice
 recommendationservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 paymentservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 emailservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 checkoutservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 shippingservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 productcatalogservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 adservice:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
 loadgenerator:
   image:
-    tag: 1fc389d2251dcc1aa4b574adbf8de020c45dcba1
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
+cartservice:
+  image:
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
+currencyservice:
+  image:
+    tag: f01b53d6986819ceb2b380228e2decffe3339c66
