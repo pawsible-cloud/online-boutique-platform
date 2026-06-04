@@ -8,7 +8,7 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.public_subnets
 
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access           = true
   enable_cluster_creator_admin_permissions = true
 
   eks_managed_node_groups = {
@@ -26,20 +26,6 @@ module "eks" {
       }
     }
   }
-resource "helm_release" "argocd" {
-  name             = "argocd"
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  namespace        = "argocd"
-  create_namespace = true
-
-  set {
-    name  = "server.service.type"
-    value = "LoadBalancer"
-  }
-
-  depends_on = [module.eks]
-}
 
   tags = {
     Project = "online-boutique"
