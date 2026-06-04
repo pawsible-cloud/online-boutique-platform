@@ -1,0 +1,93 @@
+name: CI - Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/steph
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  AWS_REGION: ${{ secrets.STEPH_AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.STEPH_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.STEPH_AWS_REGION }}.amazonaws.com
+
+jobs:
+  build-and-push:
+    name: Build ${{ matrix.service.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - name: frontend
+            context: ./src/frontend
+          - name: cartservice
+            context: ./src/cartservice/src
+          - name: productcatalogservice
+            context: ./src/productcatalogservice
+          - name: currencyservice
+            context: ./src/currencyservice
+          - name: paymentservice
+            context: ./src/paymentservice
+          - name: shippingservice
+            context: ./src/shippingservice
+          - name: emailservice
+            context: ./src/emailservice
+          - name: checkoutservice
+            context: ./src/checkoutservice
+          - name: recommendationservice
+            context: ./src/recommendationservice
+          - name: adservice
+            context: ./src/adservice
+          - name: loadgenerator
+            context: ./src/loadgenerator
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.STEPH_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.STEPH_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.STEPH_AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${{ env.ECR_REGISTRY }}/online-boutique/${{ matrix.service.name }}:${IMAGE_TAG}"
+          echo "Building: $IMAGE_URI"
+          docker build -t "$IMAGE_URI" ${{ matrix.service.context }}
+          docker push "$IMAGE_URI"
+
+      - name: Update image tag in Helm values
+        if: github.event_name == 'push'
+        continue-on-error: true
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+          yq -i ".${{ matrix.service.name }}.image.tag = \"${IMAGE_TAG}\"" \
+            helm-chart/values.yaml
+
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add helm-chart/values.yaml
+          git diff --staged --quiet || git commit -m \
+            "ci: update ${{ matrix.service.name }} image to ${IMAGE_TAG} [skip ci]"
+          git push
