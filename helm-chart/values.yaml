@@ -203,3 +203,6 @@ recommendationservice:
 paymentservice:
   image:
     tag: 5af7a3d980f482e3a799c3a28cde731c2b03f23c
+emailservice:
+  image:
+    tag: 4e517809b93741c33ed90d5cd1026daf812ac086
