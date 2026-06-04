@@ -199,7 +199,7 @@ shoppingAssistantService:
   name: shoppingassistantservice
 recommendationservice:
   image:
-    tag: 49ade3aede38b851e93506549b712d4c307e5de1
+    tag: 3431cdcc26ebe2ed733205d2b61ea441adee2d3f
 paymentservice:
   image:
     tag: 5af7a3d980f482e3a799c3a28cde731c2b03f23c
