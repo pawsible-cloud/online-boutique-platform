@@ -200,3 +200,6 @@ shoppingAssistantService:
 recommendationservice:
   image:
     tag: ebf6e97a8ee22929fd099625d6c8a82b89b036ab
+paymentservice:
+  image:
+    tag: 5af7a3d980f482e3a799c3a28cde731c2b03f23c
