@@ -1,0 +1,73 @@
+# kube-prometheus-stack values
+# Install with:
+# helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#   --namespace monitoring --create-namespace \
+#   -f monitoring/prometheus/values.yaml
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests:
+        cpu: 200m
+        memory: 400Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+grafana:
+  adminPassword: "OnlineBoutique@2026"
+  
+  service:
+    type: LoadBalancer
+
+  persistence:
+    enabled: false
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 3119
+        revision: 2
+        datasource: Prometheus
+      node-exporter:
+        gnetId: 6417
+        revision: 1
+        datasource: Prometheus
+      kubernetes-pods:
+        gnetId: 15760
+        revision: 1
+        datasource: Prometheus
+
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10m
+      repeat_interval: 1h
+      receiver: 'null'
+    receivers:
+      - name: 'null'
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
