@@ -97,7 +97,7 @@ jobs:
 
       - name: Terraform init
         id: init
-        run: terraform init
+        run: terraform init -migrate-state -input=false
 
       - name: Terraform validate
         id: validate
