@@ -4,7 +4,7 @@ terraform {
     key            = "infra/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "online-boutique-tf-locks"
+    use_lockfile   = true
   }
 
   required_providers {
