@@ -4,16 +4,17 @@ on:
   push:
     branches:
       - main
+      - develop
       - "feature/**"
     paths:
       - "terraform/**"
   pull_request:
     branches:
       - main
+      - develop
     paths:
       - "terraform/**"
 
-  # Allow manual run from GitHub Actions UI (useful for emergency applies)
   workflow_dispatch:
     inputs:
       module:
@@ -37,15 +38,13 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write  # allows posting plan output as a PR comment
-  id-token: write       # allows OIDC auth to AWS (no static credentials needed)
+  pull-requests: write
 
 env:
   TF_VERSION: "1.7.5"
-  AWS_REGION: "us-east-1"
+  AWS_REGION: ${{ secrets.STEPH_AWS_REGION }}
 
 jobs:
-  # ── Detect which modules changed ─────────────────────────────────────────
   detect-changes:
     name: Detect changed modules
     runs-on: ubuntu-latest
@@ -65,12 +64,10 @@ jobs:
             infra:
               - 'terraform/infra/**'
 
-  # ── ECR Module ───────────────────────────────────────────────────────────
   terraform-ecr:
     name: "Terraform · ECR"
     runs-on: ubuntu-latest
     needs: detect-changes
-    # Run when: ECR files changed, or manual trigger targeting ecr/both
     if: |
       needs.detect-changes.outputs.ecr == 'true' ||
       (github.event_name == 'workflow_dispatch' && (inputs.module == 'ecr' || inputs.module == 'both'))
@@ -81,18 +78,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::720035686687:role/github-actions-terraform
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.STEPH_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.STEPH_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.STEPH_AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform format check
+      - name: Terraform fmt check
         id: fmt
         run: terraform fmt -check
         continue-on-error: true
@@ -110,7 +108,6 @@ jobs:
         run: terraform plan -no-color -out=tfplan
         continue-on-error: true
 
-      # Post plan output to the PR as a comment
       - name: Post plan to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -143,22 +140,20 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: exit 1
 
-      # Apply only on merge to main (not on PRs, not on feature branches)
+      # Auto-apply on push to develop or main
       - name: Terraform apply
         if: |
-          github.ref == 'refs/heads/main' &&
+          (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
           github.event_name == 'push' &&
           steps.plan.outcome == 'success'
         run: terraform apply -auto-approve tfplan
 
-      # Manual apply via workflow_dispatch
       - name: Terraform apply (manual)
         if: |
           github.event_name == 'workflow_dispatch' &&
           inputs.action == 'apply'
         run: terraform apply -auto-approve
 
-  # ── Infra Module ─────────────────────────────────────────────────────────
   terraform-infra:
     name: "Terraform · Infra"
     runs-on: ubuntu-latest
@@ -173,18 +168,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::720035686687:role/github-actions-terraform
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.STEPH_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.STEPH_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.STEPH_AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform format check
+      - name: Terraform fmt check
         id: fmt
         run: terraform fmt -check
         continue-on-error: true
@@ -234,6 +230,7 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: exit 1
 
+      # Infra apply only on main (EKS is expensive — don't auto-apply on develop)
       - name: Terraform apply
         if: |
           github.ref == 'refs/heads/main' &&
@@ -247,7 +244,6 @@ jobs:
           inputs.action == 'apply'
         run: terraform apply -auto-approve
 
-      # Manual destroy (safety: only via workflow_dispatch, never auto)
       - name: Terraform destroy (manual only)
         if: |
           github.event_name == 'workflow_dispatch' &&
