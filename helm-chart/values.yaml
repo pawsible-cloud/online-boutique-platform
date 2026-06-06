@@ -200,4 +200,4 @@ shoppingAssistantService:
   name: shoppingassistantservice
 recommendationservice:
   image:
-    tag: 680463c98e87e3ba48a00ae03802547808cef814
+    tag: c27bb27b67ac82a16fd87c51d2243ffb39ac62cc
