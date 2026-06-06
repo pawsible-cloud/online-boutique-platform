@@ -233,7 +233,7 @@ jobs:
       # Infra apply only on main (EKS is expensive — don't auto-apply on develop)
       - name: Terraform apply
         if: |
-          github.ref == 'refs/heads/main' &&
+          (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
           github.event_name == 'push' &&
           steps.plan.outcome == 'success'
         run: terraform apply -auto-approve tfplan
