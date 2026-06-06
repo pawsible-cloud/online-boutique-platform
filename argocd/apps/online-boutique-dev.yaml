@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/pawsible-cloud/online-boutique-platform.git
-    targetRevision: feature/steph
+    targetRevision: develop
     path: helm-chart
     helm:
       valueFiles:
