@@ -1,6 +1,6 @@
 # my-values.yaml
 frontend:
-  replicas: 2        # Run 2 copies of the frontend for high availability
+  replicas: 3        # Run 2 copies of the frontend for high availability
   
 cartService:
   replicas: 1
