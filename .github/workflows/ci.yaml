@@ -174,7 +174,7 @@ jobs:
       #        Only runs on pushes to main (not on pull requests)
       - name: Update image tag in Helm values.yaml
         if: |
-          github.ref == 'refs/heads/main' &&
+          github.ref == 'refs/heads/nicky' &&
           github.event_name == 'push' &&
           (steps.changes.outputs.changed == 'true')
         env:
