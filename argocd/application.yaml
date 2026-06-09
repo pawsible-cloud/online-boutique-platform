@@ -15,7 +15,7 @@ spec:
   # Where to get the deployment config from (your Git repo)
   source:
     repoURL: https://github.com/pawsible-cloud/online-boutique-platform.git
-    targetRevision: main      # Watch the main branch
+    targetRevision: nicky      # Watch the main branch
     path: helm-chart          # The Helm chart is in this folder
     
     helm:
