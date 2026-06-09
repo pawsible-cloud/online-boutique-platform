@@ -196,5 +196,13 @@ jobs:
           git add helm-chart/values.yaml
           git diff --staged --quiet || \
             git commit -m "ci: update ${{ matrix.service }} image tag to ${IMAGE_TAG::8}"
-          git push
 
+          # Retry loop — handles race condition where multiple services push
+          # to values.yaml simultaneously (first wins, others get rejected)
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} && \
+            git push && break || {
+              echo "Push attempt $i failed, retrying in ${i}s..."
+              sleep $i
+            }
+          done
