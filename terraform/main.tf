@@ -17,7 +17,7 @@ terraform {
   # Store Terraform state in S3 so your team shares the same state
   # Create this S3 bucket manually FIRST (see 9.2)
   backend "s3" {
-    bucket = "your-terraform-state-bucket-207706557775"   # Change this
+    bucket = "your-terraform-state-bucket-651697298579"   # Change this
     key    = "online-boutique/terraform.tfstate"
     region = "us-east-1"
   }

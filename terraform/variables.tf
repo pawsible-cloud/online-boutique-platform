@@ -21,7 +21,7 @@ variable "cluster_version" {
 variable "node_instance_type" {
   description = "EC2 instance type for worker nodes (t3.medium is minimum for this app)"
   type        = string
-  default     = "t3.medium"   # NOT free tier, but cheapest that works
+  default     = "c7i-flex.large"   # NOT free tier, but cheapest that works
 }
 
 variable "node_min_count" {
