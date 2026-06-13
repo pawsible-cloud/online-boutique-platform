@@ -20,38 +20,29 @@ images:
   repository: us-central1-docker.pkg.dev/google-samples/microservices-demo
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
-
 serviceAccounts:
   create: true
   annotations: {}
   annotationsOnlyForCartservice: false
-
 networkPolicies:
   create: false
-
 sidecars:
   create: false
-
 authorizationPolicies:
   create: false
-
 opentelemetryCollector:
   create: false
   name: opentelemetrycollector
   projectId: "PROJECT_ID"
-
 googleCloudOperations:
   profiler: false
   tracing: false
   metrics: false
-
 seccompProfile:
   enable: false
   type: RuntimeDefault
-
 securityContext:
   enable: true
-
 adService:
   create: true
   name: adservice
@@ -62,7 +53,6 @@ adService:
     limits:
       cpu: 300m
       memory: 300Mi
-
 cartService:
   create: true
   name: cartservice
@@ -73,7 +63,6 @@ cartService:
     limits:
       cpu: 300m
       memory: 256Mi
-
 checkoutService:
   create: true
   name: checkoutservice
@@ -84,7 +73,6 @@ checkoutService:
     limits:
       cpu: 200m
       memory: 128Mi
-
 currencyService:
   create: true
   name: currencyservice
@@ -95,7 +83,6 @@ currencyService:
     limits:
       cpu: 200m
       memory: 256Mi
-
 emailService:
   create: true
   name: emailservice
@@ -106,7 +93,6 @@ emailService:
     limits:
       cpu: 200m
       memory: 128Mi
-
 frontend:
   create: true
   name: frontend
@@ -130,7 +116,6 @@ frontend:
     limits:
       cpu: 200m
       memory: 128Mi
-
 loadGenerator:
   create: true
   name: loadgenerator
@@ -142,7 +127,6 @@ loadGenerator:
     limits:
       cpu: 500m
       memory: 512Mi
-
 paymentService:
   create: true
   name: paymentservice
@@ -153,7 +137,6 @@ paymentService:
     limits:
       cpu: 200m
       memory: 256Mi
-
 productCatalogService:
   create: true
   name: productcatalogservice
@@ -165,7 +148,6 @@ productCatalogService:
     limits:
       cpu: 200m
       memory: 128Mi
-
 recommendationService:
   create: true
   name: recommendationservice
@@ -176,7 +158,6 @@ recommendationService:
     limits:
       cpu: 200m
       memory: 450Mi
-
 shippingService:
   create: true
   name: shippingservice
@@ -187,7 +168,6 @@ shippingService:
     limits:
       cpu: 200m
       memory: 128Mi
-
 cartDatabase:
   type: redis
   connectionString: "redis-cart:6379"
@@ -201,13 +181,11 @@ cartDatabase:
     endpointAddress: ""
     endpointPort: ""
     certificate: ""
-
 # @TODO: This service is not currently available in Helm.
 # https://github.com/GoogleCloudPlatform/microservices-demo/tree/main/kustomize/components/shopping-assistant
 shoppingAssistantService:
   create: false
   name: shoppingassistantservice
-
 recommendationservice:
   image:
-    tag: e7b852d0951b5d8dac0149abcd78ce9e0b93bcf5
+    tag: 3baf6ae11947ed859cd577725a54089041da58f9
