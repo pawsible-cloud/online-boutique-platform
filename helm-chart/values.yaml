@@ -1,5 +1,4 @@
-#text
-## Copyright 2024 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,29 +22,22 @@ images:
   tag: ""
 
 serviceAccounts:
-  # Specifies whether service accounts should be created.
   create: true
-  # Annotations to add to the service accounts.
   annotations: {}
-  # Annotations to add only for the cartservice app. This allows to follow the least privilege principle where only cartservice needs to connect to external database for example via Workload Identity.
   annotationsOnlyForCartservice: false
 
 networkPolicies:
-  # Specifies if the NetworkPolicies are created or not. If true, one fine granular NetworkPolicy per app is created.
   create: false
 
 sidecars:
-  # Specifies if the Sidecars are created or not. If true, one fine granular Sidecar per app is created.
   create: false
 
 authorizationPolicies:
-  # Specifies if the AuthorizationPolicies are created or not. If true, one fine granular AuthorizationPolicy per app is created.
   create: false
 
 opentelemetryCollector:
   create: false
   name: opentelemetrycollector
-  # Specifies the project id for the otel collector. If set as "PROJECT_ID" (default value), an initContainer will automatically retrieve the project id value from the metadata server.
   projectId: "PROJECT_ID"
 
 googleCloudOperations:
@@ -120,13 +112,12 @@ frontend:
   name: frontend
   externalService: true
   cymbalBranding: false
-  # One of: local, gcp, aws, azure, onprem, alibaba. When not set, defaults to "local" unless running in GKE, otherwise auto-sets to gcp.
   platform: local
   singleSharedSession: false
   virtualService:
     create: false
     hosts:
-    - "*"
+      - "*"
     gateway:
       name: asm-ingressgateway
       namespace: asm-ingress
@@ -166,7 +157,6 @@ paymentService:
 productCatalogService:
   create: true
   name: productcatalogservice
-  # Specifies an extra latency to any request on productcatalogservice, by default no extra latency.
   extraLatency: ""
   resources:
     requests:
@@ -199,13 +189,11 @@ shippingService:
       memory: 128Mi
 
 cartDatabase:
-  # Specifies the type of the cartservice's database, could be either redis or spanner.
   type: redis
   connectionString: "redis-cart:6379"
   inClusterRedis:
     create: true
     name: redis-cart
-    # Uses the public redis image from Docker Hub, otherwise will use the images.repository.
     publicRepository: true
   externalRedisTlsOrigination:
     enable: false
@@ -219,3 +207,7 @@ cartDatabase:
 shoppingAssistantService:
   create: false
   name: shoppingassistantservice
+
+recommendationservice:
+  image:
+    tag: e7b852d0951b5d8dac0149abcd78ce9e0b93bcf5
