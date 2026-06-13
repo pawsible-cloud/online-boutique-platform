@@ -202,7 +202,7 @@ shoppingAssistantService:
   name: shoppingassistantservice
 emailservice:
   image:
-    tag: 1608f03a372b553dc73b252b666b779d9f35e83a
+    tag: 8f4f2811629bd945d5d0dc5bfda4f41800b3f205
 recommendationservice:
   image:
     tag: 8f4f2811629bd945d5d0dc5bfda4f41800b3f205
