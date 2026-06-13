@@ -125,6 +125,8 @@ frontend:
     limits:
       cpu: 200m
       memory: 128Mi
+  image:
+    tag: 14caa2b2403ba2a184be247c0775d91135449e86
 loadGenerator:
   create: true
   name: loadgenerator
@@ -201,3 +203,6 @@ shoppingAssistantService:
 emailservice:
   image:
     tag: 1608f03a372b553dc73b252b666b779d9f35e83a
+recommendationservice:
+  image:
+    tag: 14caa2b2403ba2a184be247c0775d91135449e86
